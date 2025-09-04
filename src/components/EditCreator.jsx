@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_ENDPOINTS } from '../appConstants';
 
 const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode }) => {
   const [editedCreator, setEditedCreator] = useState(selectedCreator);
@@ -27,7 +28,7 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
   const handleUpdateCreator = async () => {
     setApiStatus('Updating creator...');
     try {
-      const response = await fetch(`http://localhost:8000/api/creator/${editedCreator._id}`, {
+      const response = await fetch(API_ENDPOINTS.updateCreator(editedCreator._id), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -54,12 +55,12 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
     }
 
     setApiStatus('Uploading image...');
-    
+
     const uploadFormData = new FormData();
     uploadFormData.append('file', imageFile);
 
     try {
-      const response = await fetch('http://localhost:8000/api/image/upload/', {
+      const response = await fetch(API_ENDPOINTS.image.upload, {
         method: 'POST',
         body: uploadFormData,
       });
@@ -71,8 +72,8 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
 
       const result = await response.json();
       const newImageId = result.id;
-      
-      const updateResponse = await fetch(`http://localhost:8000/api/creator/${selectedCreator._id}`, {
+
+      const updateResponse = await fetch(API_ENDPOINTS.updateCreator(selectedCreator._id), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -91,7 +92,6 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
       onUpdate(updatedCreator);
       setImageFile(null);
       setImagePreviewUrl(null);
-
     } catch (error) {
       setApiStatus(`Error: ${error.message}`);
     }
@@ -100,6 +100,7 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
   const cardBg = isDarkMode ? 'bg-gray-700' : 'bg-white';
   const textColor = isDarkMode ? 'text-gray-100' : 'text-gray-800';
   const subtextColor = isDarkMode ? 'text-gray-300' : 'text-gray-600';
+  const inputBg = isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800';
   const accentColor = isDarkMode ? 'bg-gray-600' : 'bg-gray-300';
   const accentTextColor = isDarkMode ? 'text-gray-100' : 'text-gray-800';
 
@@ -113,9 +114,7 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
       </button>
       <div className={`container mx-auto max-w-4xl p-8 rounded-lg shadow-lg ${cardBg}`}>
         <h1 className={`text-4xl font-bold mb-4 ${textColor}`}>Edit {selectedCreator.name}</h1>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          {/* Creator Information Section */}
           <div>
             <h2 className={`text-2xl font-semibold mb-4 ${textColor}`}>Creator Information</h2>
             <form onSubmit={(e) => { e.preventDefault(); handleUpdateCreator(); }} className="flex flex-col space-y-4">
@@ -126,7 +125,7 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
                   name="name"
                   value={editedCreator.name}
                   onChange={handleEditedCreatorChange}
-                  className={`w-full p-3 mt-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-800 border-gray-300'}`}
+                  className={`w-full p-3 mt-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 ${inputBg}`}
                 />
               </label>
               <label className={`${subtextColor}`}>
@@ -135,7 +134,7 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
                   name="description"
                   value={editedCreator.description}
                   onChange={handleEditedCreatorChange}
-                  className={`w-full p-3 mt-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-800 border-gray-300'}`}
+                  className={`w-full p-3 mt-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none transition-colors duration-300 ${inputBg}`}
                 />
               </label>
               <label className={`${subtextColor}`}>
@@ -145,7 +144,7 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
                   name="gender"
                   value={editedCreator.gender}
                   onChange={handleEditedCreatorChange}
-                  className={`w-full p-3 mt-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-800 border-gray-300'}`}
+                  className={`w-full p-3 mt-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 ${inputBg}`}
                 />
               </label>
               <button
@@ -159,14 +158,12 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
               )}
             </form>
           </div>
-
-          {/* Image Upload Section */}
           <div className={`p-6 rounded-lg border border-gray-200 transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
             <h2 className={`text-2xl font-semibold mb-4 ${textColor}`}>Upload New Image</h2>
             {selectedCreator.image_id && (
               <div className="mb-4 flex flex-col items-center">
                 <p className={`text-sm mb-2 ${subtextColor}`}>Current Image:</p>
-                <img src={`http://localhost:8000/api/image/get/${selectedCreator.image_id}`} alt="Creator" className="w-48 h-48 object-cover rounded-lg shadow-lg" />
+                <img src={API_ENDPOINTS.image.get(selectedCreator.image_id)} alt="Creator" className="w-48 h-48 object-cover rounded-lg shadow-lg" />
               </div>
             )}
             {imagePreviewUrl && (

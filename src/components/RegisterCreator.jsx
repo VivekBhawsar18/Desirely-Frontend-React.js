@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { API_ENDPOINTS } from '../appConstants';
 
-const RegisterCreator = ({ onGoBack }) => {
+const RegisterCreator = ({ onGoBack, isDarkMode }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -17,7 +18,7 @@ const RegisterCreator = ({ onGoBack }) => {
     e.preventDefault();
     setApiStatus('Creating creator...');
     try {
-      const response = await fetch('http://localhost:8000/api/creator', {
+      const response = await fetch(API_ENDPOINTS.creator, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,21 +39,30 @@ const RegisterCreator = ({ onGoBack }) => {
         image_id: '',
         gender: ''
       });
+      // Optionally navigate back to the list
+      setTimeout(() => onGoBack(), 2000);
     } catch (error) {
       setApiStatus(`Error: ${error.message}`);
     }
   };
 
+  const cardBg = isDarkMode ? 'bg-gray-700' : 'bg-white';
+  const textColor = isDarkMode ? 'text-gray-100' : 'text-gray-800';
+  const subtextColor = isDarkMode ? 'text-gray-300' : 'text-gray-600';
+  const inputBg = isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800';
+  const accentColor = isDarkMode ? 'bg-gray-600' : 'bg-gray-300';
+  const accentTextColor = isDarkMode ? 'text-gray-100' : 'text-gray-800';
+
   return (
-    <div className="flex flex-col items-center justify-start p-8 bg-gray-100 min-h-screen">
+    <div className={`flex flex-col items-center justify-start p-8 min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <button
         onClick={onGoBack}
-        className="mb-8 px-6 py-2 bg-gray-300 text-gray-800 font-medium rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300"
+        className={`mb-8 px-6 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 ${accentColor} ${accentTextColor}`}
       >
         ← Go Back
       </button>
-      <div className="container mx-auto max-w-lg bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-4xl font-bold text-gray-800 mb-6">Register a New Creator</h1>
+      <div className={`container mx-auto max-w-lg p-8 rounded-lg shadow-lg ${cardBg}`}>
+        <h1 className={`text-4xl font-bold mb-6 ${textColor}`}>Register a New Creator</h1>
         <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
           <input
             type="text"
@@ -61,7 +71,7 @@ const RegisterCreator = ({ onGoBack }) => {
             value={formData.name}
             onChange={handleChange}
             required
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 ${inputBg}`}
           />
           <textarea
             name="description"
@@ -69,7 +79,7 @@ const RegisterCreator = ({ onGoBack }) => {
             value={formData.description}
             onChange={handleChange}
             required
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
+            className={`p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none transition-colors duration-300 ${inputBg}`}
           />
           <input
             type="text"
@@ -77,7 +87,7 @@ const RegisterCreator = ({ onGoBack }) => {
             placeholder="Image ID (optional)"
             value={formData.image_id}
             onChange={handleChange}
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 ${inputBg}`}
           />
           <input
             type="text"
@@ -86,7 +96,7 @@ const RegisterCreator = ({ onGoBack }) => {
             value={formData.gender}
             onChange={handleChange}
             required
-            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 ${inputBg}`}
           />
           <button
             type="submit"
@@ -95,7 +105,7 @@ const RegisterCreator = ({ onGoBack }) => {
             Create Creator
           </button>
         </form>
-        {apiStatus && <p className="mt-4 text-center text-sm font-medium text-gray-700">{apiStatus}</p>}
+        {apiStatus && <p className={`mt-4 text-center text-sm font-medium ${apiStatus.includes('Error') ? 'text-red-500' : subtextColor}`}>{apiStatus}</p>}
       </div>
     </div>
   );
