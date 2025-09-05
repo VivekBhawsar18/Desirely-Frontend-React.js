@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../appConstants';
+import { useNotification } from './NotificationProvider';
 
-const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode }) => {
+const EditCreator = ({ selectedCreator, onUpdate, onDelete, isDarkMode }) => {
+  const navigate = useNavigate();
+  const { showSuccess, showError, showInfo, showWarning } = useNotification();
   const [editedCreator, setEditedCreator] = useState(selectedCreator);
-  const [apiStatus, setApiStatus] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
 
   useEffect(() => {
     setEditedCreator(selectedCreator);
-    setApiStatus('');
     setImageFile(null);
     setImagePreviewUrl(null);
   }, [selectedCreator]);
@@ -26,7 +30,9 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
   };
 
   const handleUpdateCreator = async () => {
-    setApiStatus('Updating creator...');
+    setIsUpdating(true);
+    showInfo('Updating creator...', 2000);
+    
     try {
       const response = await fetch(API_ENDPOINTS.updateCreator(editedCreator._id), {
         method: 'PUT',
@@ -41,20 +47,23 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
         throw new Error(errorData.detail || 'Creator update failed');
       }
 
-      setApiStatus('Creator updated successfully!');
+      showSuccess(`Creator "${editedCreator.name}" updated successfully!`, 4000);
       onUpdate(editedCreator);
     } catch (error) {
-      setApiStatus(`Error: ${error.message}`);
+      showError(`Failed to update creator: ${error.message}`, 5000);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleImageUpload = async () => {
     if (!imageFile) {
-      setApiStatus('Please select an image to upload.');
+      showWarning('Please select an image to upload.', 3000);
       return;
     }
 
-    setApiStatus('Uploading image...');
+    setIsUploading(true);
+    showInfo('Uploading image...', 2000);
 
     const uploadFormData = new FormData();
     uploadFormData.append('file', imageFile);
@@ -86,14 +95,16 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
         throw new Error(errorData.detail || 'Creator update failed');
       }
 
-      setApiStatus('Image uploaded and creator updated successfully!');
+      showSuccess('Image uploaded and creator updated successfully!', 4000);
       const updatedCreator = { ...editedCreator, image_id: newImageId };
       setEditedCreator(updatedCreator);
       onUpdate(updatedCreator);
       setImageFile(null);
       setImagePreviewUrl(null);
     } catch (error) {
-      setApiStatus(`Error: ${error.message}`);
+      showError(`Failed to upload image: ${error.message}`, 5000);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -105,9 +116,9 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
   const accentTextColor = isDarkMode ? 'text-gray-100' : 'text-gray-800';
 
   return (
-    <div className={`flex flex-col items-center justify-start p-8 min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+    <div className={`flex flex-col items-center justify-start p-8 transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <button
-        onClick={onGoBack}
+        onClick={() => navigate('/')}
         className={`mb-8 px-6 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 ${accentColor} ${accentTextColor}`}
       >
         ← Go Back
@@ -147,15 +158,17 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
                   className={`w-full p-3 mt-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 ${inputBg}`}
                 />
               </label>
-              <button
-                type="submit"
-                className="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out"
-              >
-                Save Changes
-              </button>
-              {apiStatus.includes('Error') || apiStatus.includes('Success') && (
-                <p className={`mt-4 text-center text-sm font-medium ${apiStatus.includes('Error') ? 'text-red-500' : subtextColor}`}>{apiStatus}</p>
-              )}
+                             <button
+                 type="submit"
+                 disabled={isUpdating}
+                 className={`w-full px-6 py-3 font-semibold rounded-lg shadow-md transition duration-300 ease-in-out ${
+                   isUpdating 
+                     ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                     : 'bg-green-600 text-white hover:bg-green-700'
+                 }`}
+               >
+                 {isUpdating ? 'Saving...' : 'Save Changes'}
+               </button>
             </form>
           </div>
           <div className={`p-6 rounded-lg border border-gray-200 transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
@@ -183,13 +196,17 @@ const EditCreator = ({ selectedCreator, onUpdate, onDelete, onGoBack, isDarkMode
               }}
               className={`mb-4 w-full transition-colors duration-300 ${subtextColor}`}
             />
-            <button
-              onClick={handleImageUpload}
-              className="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out"
-            >
-              Upload New Image
-            </button>
-            {apiStatus.includes('Image') && <p className={`mt-4 text-center text-sm font-medium ${apiStatus.includes('Error') ? 'text-red-500' : subtextColor}`}>{apiStatus}</p>}
+                         <button
+               onClick={handleImageUpload}
+               disabled={isUploading}
+               className={`w-full px-6 py-3 font-semibold rounded-lg shadow-md transition duration-300 ease-in-out ${
+                 isUploading 
+                   ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                   : 'bg-green-600 text-white hover:bg-green-700'
+               }`}
+             >
+               {isUploading ? 'Uploading...' : 'Upload New Image'}
+             </button>
           </div>
         </div>
         <div className="mt-8 flex justify-center">

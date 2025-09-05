@@ -1,142 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { API_ENDPOINTS, API_STATUS } from './appConstants';
-import RegisteredCreators from './components/RegisteredCreators';
-import RegisterCreator from './components/RegisterCreator';
-import EditCreator from './components/EditCreator';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
+import Header from './components/Header';
+import Home from './pages/Home';
+import CreatorDetail from './pages/CreatorDetail';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import NotFound from './pages/NotFound';
+import { NotificationProvider } from './components/NotificationProvider';
+import RegisterUser from './pages/RegisterUser';
 
-const App = () => {
-  const [currentPage, setCurrentPage] = useState('list');
-  const [creators, setCreators] = useState([]);
-  const [selectedCreator, setSelectedCreator] = useState(null);
-  const [apiStatus, setApiStatus] = useState('');
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  const fetchCreators = async () => {
-    setApiStatus(API_STATUS.loading);
-    try {
-      const response = await fetch(API_ENDPOINTS.creators);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const data = await response.json();
-      setCreators(data);
-      setApiStatus('');
-    } catch (error) {
-      setApiStatus(`${API_STATUS.error}: ${error.message}`);
-    }
-  };
-
+// Placeholder for authentication status. In a real app, this would be managed with a context or a global state.
+const useAuth = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Default to false
+  
+  // This useEffect simulates a check for a logged-in user, like from local storage or an API call.
   useEffect(() => {
-    fetchCreators();
-  }, [currentPage]);
+    // In a real application, you would check for a token or user session here.
+    // For demonstration purposes, we'll just set it to false.
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
-  const handleSelectCreator = (creator) => {
-    setSelectedCreator(creator);
-    setCurrentPage('details');
+  const login = () => {
+    // This is a placeholder for your actual login logic.
+    // Once a user is authenticated, you would set isAuthenticated to true and store a token.
+    localStorage.setItem('authToken', 'my-auth-token');
+    setIsAuthenticated(true);
   };
 
-  const handleUpdateCreator = (updatedCreator) => {
-    setSelectedCreator(updatedCreator);
-    fetchCreators();
-    setCurrentPage('list');
-  };
-
-  const handleDeleteCreator = async (creator) => {
-    setShowDeleteModal(true);
+  const logout = () => {
+    // Placeholder logout logic. Clear the token and set isAuthenticated to false.
+    localStorage.removeItem('authToken');
+    setIsAuthenticated(false);
   };
   
-  const confirmDelete = async () => {
-    setShowDeleteModal(false);
-    setApiStatus(API_STATUS.loading);
-    try {
-      const response = await fetch(API_ENDPOINTS.deleteCreator(selectedCreator._id), {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to delete creator');
-      }
-      setApiStatus('Creator deleted successfully!');
-      fetchCreators();
-      setCurrentPage('list');
-    } catch (error) {
-      setApiStatus(`${API_STATUS.error}: ${error.message}`);
-    }
-  };
+  return { isAuthenticated, login, logout };
+};
 
-  const cancelDelete = () => {
-    setShowDeleteModal(false);
-  };
+const App = () => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { isAuthenticated, login, logout } = useAuth();
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'list':
-        return (
-          <RegisteredCreators
-            creators={creators}
-            apiStatus={apiStatus}
-            onSelectCreator={handleSelectCreator}
-            onRegisterClick={() => setCurrentPage('register')}
-            onRefresh={fetchCreators}
-            isDarkMode={isDarkMode}
-            toggleTheme={() => setIsDarkMode(!isDarkMode)}
-          />
-        );
-      case 'register':
-        return (
-          <RegisterCreator
-            onGoBack={() => setCurrentPage('list')}
-            isDarkMode={isDarkMode}
-          />
-        );
-      case 'details':
-        return (
-          <EditCreator
-            selectedCreator={selectedCreator}
-            onUpdate={handleUpdateCreator}
-            onDelete={handleDeleteCreator}
-            onGoBack={() => setCurrentPage('list')}
-            isDarkMode={isDarkMode}
-          />
-        );
-      default:
-        return null;
-    }
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
   };
-
-  const modalBg = isDarkMode ? 'bg-gray-800' : 'bg-white';
-  const modalText = isDarkMode ? 'text-gray-100' : 'text-gray-800';
-  const modalBtnPrimary = "bg-red-600 hover:bg-red-700 text-white";
-  const modalBtnSecondary = "bg-gray-300 hover:bg-gray-400 text-gray-800";
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-      {renderPage()}
-      
-      {showDeleteModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className={`p-8 rounded-lg shadow-xl ${modalBg}`}>
-            <h2 className={`text-xl font-bold mb-4 ${modalText}`}>Confirm Deletion</h2>
-            <p className={`mb-6 ${modalText}`}>Are you sure you want to delete {selectedCreator?.name}? This action cannot be undone.</p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={cancelDelete}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${modalBtnSecondary}`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${modalBtnPrimary}`}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+    <Router>
+      <NotificationProvider>
+        <div className={`flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'} transition-colors duration-300`}>
+          {/* Conditionally render the Header only if the user is authenticated */}
+          {isAuthenticated && <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />}
+
+          <main className="flex-1 flex flex-col">
+            <Routes>
+              {/* Public Routes - Accessible to all users */}
+              <Route path="/login" element={<Login isDarkMode={isDarkMode} onLogin={login} />} />
+              <Route path="/registeruser" element={<RegisterUser isDarkMode={isDarkMode} />} />
+              
+              {/* Protected Routes - Only accessible if isAuthenticated is true */}
+              {isAuthenticated ? (
+                <>
+                  <Route path="/home" element={<Home isDarkMode={isDarkMode} />} />
+                  <Route path="/creator/:id" element={<CreatorDetail isDarkMode={isDarkMode} />} />
+                </>
+              ) : (
+                <Route path="*" element={<Navigate to="/login" />} />
+              )}
+              
+              {/* Fallback for unknown URLs */}
+              <Route path="*" element={<NotFound isDarkMode={isDarkMode} />} />
+            </Routes>
+          </main>
         </div>
-      )}
-    </div>
+      </NotificationProvider>
+    </Router>
   );
 };
 

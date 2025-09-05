@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../appConstants';
+import { useNotification } from './NotificationProvider';
 
-const RegisterCreator = ({ onGoBack, isDarkMode }) => {
+const RegisterCreator = ({ isDarkMode }) => {
+  const navigate = useNavigate();
+  const { showSuccess, showError, showInfo } = useNotification();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     image_id: '',
     gender: ''
   });
-  const [apiStatus, setApiStatus] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -16,7 +20,9 @@ const RegisterCreator = ({ onGoBack, isDarkMode }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setApiStatus('Creating creator...');
+    setIsSubmitting(true);
+    showInfo('Creating creator...', 2000);
+    
     try {
       const response = await fetch(API_ENDPOINTS.creator, {
         method: 'POST',
@@ -32,17 +38,21 @@ const RegisterCreator = ({ onGoBack, isDarkMode }) => {
       }
 
       const result = await response.json();
-      setApiStatus(`Creator created successfully! ID: ${result._id}`);
+      showSuccess(`Creator "${formData.name}" created successfully!`, 4000);
+      
       setFormData({
         name: '',
         description: '',
         image_id: '',
         gender: ''
       });
-      // Optionally navigate back to the list
-      setTimeout(() => onGoBack(), 2000);
+      
+      // Navigate back to the list after a short delay
+      setTimeout(() => navigate('/'), 2000);
     } catch (error) {
-      setApiStatus(`Error: ${error.message}`);
+      showError(`Failed to create creator: ${error.message}`, 5000);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -54,9 +64,9 @@ const RegisterCreator = ({ onGoBack, isDarkMode }) => {
   const accentTextColor = isDarkMode ? 'text-gray-100' : 'text-gray-800';
 
   return (
-    <div className={`flex flex-col items-center justify-start p-8 min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+    <div className={`flex flex-col items-center justify-start p-8 transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <button
-        onClick={onGoBack}
+        onClick={() => navigate('/')}
         className={`mb-8 px-6 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 ${accentColor} ${accentTextColor}`}
       >
         ← Go Back
@@ -100,12 +110,16 @@ const RegisterCreator = ({ onGoBack, isDarkMode }) => {
           />
           <button
             type="submit"
-            className="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out"
+            disabled={isSubmitting}
+            className={`w-full px-6 py-3 font-semibold rounded-lg shadow-md transition duration-300 ease-in-out ${
+              isSubmitting 
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
           >
-            Create Creator
+            {isSubmitting ? 'Creating...' : 'Create Creator'}
           </button>
         </form>
-        {apiStatus && <p className={`mt-4 text-center text-sm font-medium ${apiStatus.includes('Error') ? 'text-red-500' : subtextColor}`}>{apiStatus}</p>}
       </div>
     </div>
   );
